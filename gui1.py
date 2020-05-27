@@ -7,13 +7,14 @@ import time
 import openpyxl
 
 root= tk.Tk()
+root.title('Billing Application')
+root.geometry('300x600')
+root.configure(bg='lightsteelblue2')
 
-canvas1 = tk.Canvas(root, width = 300, height = 350, bg = 'lightsteelblue2', relief = 'raised')
-canvas1.pack()
 
-label1 = tk.Label(root, text='Billing Application', bg = 'lightsteelblue2')
+label1 = tk.Label(root, text='Billing Application', bg = 'lightsteelblue2', anchor='center')
 label1.config(font=('helvetica', 20))
-canvas1.create_window(150, 60, window=label1)
+label1.grid(row=0)
 
 def getCSV1 ():
     global file1
@@ -27,8 +28,8 @@ def getCSV1 ():
     #    import_file_path = filedialog.askopenfilename()
     #    file1 = pd.read_csv (import_file_path)
 
-browseButton_CSV = tk.Button(text="      Import Labor CSV File     ", command=getCSV1, bg='green', fg='white', font=('helvetica', 12, 'bold'))
-canvas1.create_window(150, 130, window=browseButton_CSV)
+browseButton_CSV = tk.Button(root, text="      Import Labor CSV File     ", command=getCSV1, bg='green', fg='white', font=('helvetica', 12, 'bold'))
+browseButton_CSV.grid(row=1)
 
 def getCSV2 ():
     global file2
@@ -36,8 +37,8 @@ def getCSV2 ():
     import_file_path = filedialog.askopenfilename()
     file2 = pd.read_csv (import_file_path)
 
-browseButton_CSV2 = tk.Button(text="      Import Materials CSV File     ", command=getCSV2, bg='green', fg='white', font=('helvetica', 12, 'bold'))
-canvas1.create_window(150, 180, window=browseButton_CSV2)
+browseButton_CSV2 = tk.Button(root, text="      Import Materials CSV File     ", command=getCSV2, bg='green', fg='white', font=('helvetica', 12, 'bold'))
+browseButton_CSV2.grid(row=2)
 
 def convertToExcel ():
     global read_file
@@ -51,6 +52,11 @@ def convertToExcel ():
 def createApplication():
     MsgBox = tk.messagebox.askquestion ('Create New Billing Folder',"This will create a new folder with today's date.",icon = 'warning')
     if MsgBox == 'yes':
+       TodaysDate = time.strftime("%m-%d-%Y")
+       outdir = filedialog.askdirectory() + '\\' + TodaysDate +' Billing Files'
+       if not os.path.exists(outdir):
+           os.mkdir(outdir)
+
        # Open Labor file
        df = file1
 
@@ -82,13 +88,10 @@ def createApplication():
        df = df[['job #','job description','cost code','cost code description','date','class','cost/hours','rate','billable','vendor/employee','notes']]
 
        # Create new path w/ date
-       TodaysDate = time.strftime("%m-%d-%Y")
        outname = 'LABOR.csv'
 
-       outdir = r'C:\Users\evanj\Desktop\E1 Project\ '+TodaysDate+' Billing Files'
-       if not os.path.exists(outdir):
-           os.mkdir(outdir)
-
+       #outdir = r'C:\Users\evanj\Desktop\E1 Project\ '+TodaysDate+' Billing Files'
+       
        fullname = os.path.join(outdir, outname)
 
        df.to_csv(fullname, index=False)
@@ -114,10 +117,6 @@ def createApplication():
 
        outname = 'MATERIALS.csv'
 
-       outdir = r'C:\Users\evanj\Desktop\E1 Project\ '+TodaysDate+' Billing Files'
-       if not os.path.exists(outdir):
-           os.mkdir(outdir)
-
        fullname = os.path.join(outdir, outname)
 
        df2.to_csv(fullname, index=False)
@@ -131,11 +130,7 @@ def createApplication():
        # 'notes' no longer needed
        compiled = compiled.drop(columns = ['notes'])
 
-       outdir = r'C:\Users\evanj\Desktop\E1 Project\ '+TodaysDate+' Billing Files'
-       if not os.path.exists(outdir):
-           os.mkdir(outdir)
-
-       TodaysDate = time.strftime("%m-%d-%Y")
+       
        outname = TodaysDate +" MASTER Billing"+".xlsx"
        sheetname = " MasterSheet.csv"
 
@@ -149,7 +144,7 @@ def createApplication():
        print('New folder and spreadsheets generated!')
 
 createButton = tk.Button (root, text='       Create New Billing Folder     ',command=createApplication, bg='blue', fg='white', font=('helvetica', 12, 'bold'))
-canvas1.create_window(150, 230, window=createButton)
+createButton.grid(row=3)
 
 def exitApplication():
     MsgBox = tk.messagebox.askquestion ('Exit Application','Are you sure you want to exit the application',icon = 'warning')
@@ -157,6 +152,6 @@ def exitApplication():
        root.destroy()
 
 exitButton = tk.Button (root, text='       Exit Application     ',command=exitApplication, bg='brown', fg='white', font=('helvetica', 12, 'bold'))
-canvas1.create_window(150, 280, window=exitButton)
+exitButton.grid(row=4)
 
 root.mainloop()
