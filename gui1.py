@@ -6,15 +6,6 @@ import os
 import time
 import openpyxl
 
-root= tk.Tk()
-root.title('Billing Application')
-root.geometry('300x600')
-root.configure(bg='lightsteelblue2')
-
-
-label1 = tk.Label(root, text='Billing Application', bg = 'lightsteelblue2', anchor='center')
-label1.config(font=('helvetica', 20))
-label1.grid(row=0)
 
 def getCSV1 ():
     global file1
@@ -28,8 +19,7 @@ def getCSV1 ():
     #    import_file_path = filedialog.askopenfilename()
     #    file1 = pd.read_csv (import_file_path)
 
-browseButton_CSV = tk.Button(root, text="      Import Labor CSV File     ", command=getCSV1, bg='green', fg='white', font=('helvetica', 12, 'bold'))
-browseButton_CSV.grid(row=1)
+
 
 def getCSV2 ():
     global file2
@@ -37,8 +27,28 @@ def getCSV2 ():
     import_file_path = filedialog.askopenfilename()
     file2 = pd.read_csv (import_file_path)
 
-browseButton_CSV2 = tk.Button(root, text="      Import Materials CSV File     ", command=getCSV2, bg='green', fg='white', font=('helvetica', 12, 'bold'))
-browseButton_CSV2.grid(row=2)
+
+def getEmployees():
+    global employees 
+    employees = dict()
+    import_file_path = filedialog.askopenfilename()
+    df_e = pd.read_csv (import_file_path)
+
+
+    for index, row in df_e.iterrows():
+        employees[row['employee']] = row['rate']
+
+def getCost():
+    global cost 
+    cost = dict()
+
+    import_file_path = filedialog.askopenfilename()
+    df_c = pd.read_csv (import_file_path)
+
+    for x in df_c:
+        print (x);
+    for index, row in df_c.iterrows():
+        cost[row['cost code']] = row['multiplier']
 
 def convertToExcel ():
     global read_file
@@ -115,13 +125,18 @@ def createApplication():
        #column schema
        df2 = df2[['job #','job description','cost code','cost code description','date','class','cost/hours','rate','billable','vendor/employee']]
 
+       for index, row in df2.iterrows():
+          if row['vendor/employee'] in employees and row['cost code'] in cost:
+            row['rate'] = employees[row['vendor/employee']] * cost[row['cost code']]
+
+
        outname = 'MATERIALS.csv'
 
        fullname = os.path.join(outdir, outname)
 
        df2.to_csv(fullname, index=False)
 
-
+       
 
 
        # Append the two and make a Master file
@@ -143,15 +158,37 @@ def createApplication():
 
        print('New folder and spreadsheets generated!')
 
-createButton = tk.Button (root, text='       Create New Billing Folder     ',command=createApplication, bg='blue', fg='white', font=('helvetica', 12, 'bold'))
-createButton.grid(row=3)
 
 def exitApplication():
     MsgBox = tk.messagebox.askquestion ('Exit Application','Are you sure you want to exit the application',icon = 'warning')
     if MsgBox == 'yes':
        root.destroy()
 
-exitButton = tk.Button (root, text='       Exit Application     ',command=exitApplication, bg='brown', fg='white', font=('helvetica', 12, 'bold'))
-exitButton.grid(row=4)
 
+root= tk.Tk()
+root.title('Billing Application')
+root.geometry('300x600')
+root.configure(bg='lightsteelblue2')
+
+
+label1 = tk.Label(root, text='Billing Application', bg = 'lightsteelblue2', anchor='center')
+label1.config(font=('helvetica', 20))
+label1.grid(row=0)
+browseButton_CSV = tk.Button(root, text="      Import Labor CSV File     ", command=getCSV1, bg='green', fg='white', font=('helvetica', 12, 'bold'))
+browseButton_CSV.grid(row=1)
+
+browseButton_CSV2 = tk.Button(root, text="      Import Materials CSV File     ", command=getCSV2, bg='green', fg='white', font=('helvetica', 12, 'bold'))
+browseButton_CSV2.grid(row=2)
+
+browseButton_CSV = tk.Button(root, text="      Import Employee CSV File     ", command=getEmployees, bg='green', fg='white', font=('helvetica', 12, 'bold'))
+browseButton_CSV.grid(row=3)
+
+browseButton_CSV2 = tk.Button(root, text="      Import Cost CSV File     ", command=getCost, bg='green', fg='white', font=('helvetica', 12, 'bold'))
+browseButton_CSV2.grid(row=4)
+
+createButton = tk.Button (root, text='       Create New Billing Folder     ',command=createApplication, bg='blue', fg='white', font=('helvetica', 12, 'bold'))
+createButton.grid(row=5)
+
+exitButton = tk.Button (root, text='       Exit Application     ',command=exitApplication, bg='brown', fg='white', font=('helvetica', 12, 'bold'))
+exitButton.grid(row=6)
 root.mainloop()
