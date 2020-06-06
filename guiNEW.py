@@ -8,7 +8,7 @@ import openpyxl
 
 root= tk.Tk()
 
-canvas1 = tk.Canvas(root, width = 300, height = 350, bg = 'lightsteelblue2', relief = 'raised')
+canvas1 = tk.Canvas(root, width = 300, height = 450, bg = 'lightsteelblue2', relief = 'raised')
 canvas1.pack()
 
 label1 = tk.Label(root, text='Billing Application', bg = 'lightsteelblue2')
@@ -20,14 +20,8 @@ def getCSV1 ():
 
     import_file_path = filedialog.askopenfilename()
     file1 = pd.read_csv (import_file_path)
-    #MsgBox = tk.messagebox.askquestion ('File Selection','Is this the labor file?',(text=tk.path.basename(file1), fg="blue"))
-    #if MsgBox == 'yes':
-    #    file1 = file1
-    #else:
-    #    import_file_path = filedialog.askopenfilename()
-    #    file1 = pd.read_csv (import_file_path)
 
-browseButton_CSV = tk.Button(text="      Import Labor CSV File     ", command=getCSV1, bg='green', fg='white', font=('helvetica', 12, 'bold'))
+browseButton_CSV = tk.Button(text="      Import LABOR CSV File     ", command=getCSV1, bg='green', fg='white', font=('helvetica', 12, 'bold'))
 canvas1.create_window(150, 130, window=browseButton_CSV)
 #browseButton_CSV.grid(row = 1)
 
@@ -37,9 +31,27 @@ def getCSV2 ():
     import_file_path = filedialog.askopenfilename()
     file2 = pd.read_csv (import_file_path)
 
-browseButton_CSV2 = tk.Button(text="      Import Materials CSV File     ", command=getCSV2, bg='green', fg='white', font=('helvetica', 12, 'bold'))
+browseButton_CSV2 = tk.Button(text="      Import MATERIALS CSV File     ", command=getCSV2, bg='green', fg='white', font=('helvetica', 12, 'bold'))
 canvas1.create_window(150, 180, window=browseButton_CSV2)
 #browseButton_CSV2.grid(row = 2)
+
+def getCSV3 ():
+    global file3
+
+    import_file_path = filedialog.askopenfilename()
+    file3 = pd.read_csv (import_file_path)
+
+browseButton_CSV3 = tk.Button(text="      Import PAY RATES CSV File     ", command=getCSV3, bg='green', fg='white', font=('helvetica', 12, 'bold'))
+canvas1.create_window(150, 230, window=browseButton_CSV3)
+
+def getCSV4 ():
+    global file4
+
+    import_file_path = filedialog.askopenfilename()
+    file4 = pd.read_csv (import_file_path)
+
+browseButton_CSV4 = tk.Button(text="      Import COST CODES CSV File     ", command=getCSV4, bg='green', fg='white', font=('helvetica', 12, 'bold'))
+canvas1.create_window(150, 280, window=browseButton_CSV4)
 
 def convertToExcel ():
     global read_file
@@ -47,14 +59,15 @@ def convertToExcel ():
     export_file_path = filedialog.asksaveasfilename(defaultextension='.xlsx')
     read_file.to_excel (export_file_path, index = None, header=True)
 
-#saveAsButton_Excel = tk.Button(text='Convert CSV to Excel', command=convertToExcel, bg='green', fg='white', font=('helvetica', 12, 'bold'))
-#canvas1.create_window(150, 180, window=saveAsButton_Excel)
 
 def createApplication():
     MsgBox = tk.messagebox.askquestion ('Create New Billing Folder',"This will create a new folder with today's date.",icon = 'warning')
     if MsgBox == 'yes':
        # Open Labor file
        df = file1
+       df2 = file2
+       df3 = file3
+       df4 = file4
 
        # Drop unwanted columns
        df = df.drop(columns=['payroll_id','fname','lname','number','group','local_day','local_end_time','tz','location'])
@@ -71,17 +84,19 @@ def createApplication():
        # rename columns/create new columns
        df = df.rename(columns={'local_date': 'Date','hours':'Cost/Hours','username':'Vendor/Employee'})
        df['Class'] = "LAB"
-       df['Rate'] = ""
-       #df['rate'] = df['rate'].astype(float)
-       df['Cost/Hours'] = df['Cost/Hours'].astype(float)
-       df['Billable'] = "" # df['rate']*df['cost/hours']
+       df['Cost/Hours'] = pd.to_numeric(df['Cost/Hours'],errors='coerce')
        df['Type'] = ""
-
+       df['Billable'] = ""
+       df['Billable'] = pd.to_numeric(df['Billable'],errors='coerce')
+    
        # drop residual jobcode column
        df = df.drop(columns=['jobcode'])
 
+       df5 = pd.merge(df,df3, how = 'left')
+
        # column schema
-       df = df[['Job No','Job Description','Cost Code','Cost Code Description','Date','Class','Cost/Hours','Rate','Billable','Vendor/Employee','notes']]
+       df5 = df5[['Job No','Job Description','Cost Code','Cost Code Description','Date','Class','Cost/Hours','Rate','Billable','Vendor/Employee','notes']]
+       df5['Billable']=df5['Rate']*df5['Cost/Hours']
 
        # Create new path w/ date
        TodaysDate = time.strftime("%m-%d-%Y")
@@ -93,12 +108,10 @@ def createApplication():
 
        fullname = os.path.join(outdir, outname)
 
-       df.to_csv(fullname, index=False)
+       df5.to_csv(fullname, index=False)
 
        # drop unnecessary 'notes' column
-       df.drop(columns='notes')
-
-
+       df5.drop(columns='notes')
 
        # Open and convert Materials File
        df2 = file2
@@ -108,13 +121,15 @@ def createApplication():
 
        # rename columns/create new columns
        df2 = df2.rename(columns={'Dollars': 'Cost/Hours','Comment':'Vendor/Employee'})
-       df2['Rate'] = ""
-       #df['rate'] = df['rate'].astype(float)
-       df['Cost/Hours'] = df['Cost/Hours'].astype(float)
-       df2['Billable'] = "" # df2['rate']*df2['cost/hours']
+       df2['Cost/Hours'] = pd.to_numeric(df2['Cost/Hours'],errors='coerce')
+       df2['Billable'] = ""
+       df2['Billable'] = pd.to_numeric(df['Billable'],errors='coerce')
 
+       df6 = pd.merge(df2,df4, how = 'left')
+       
        #column schema
-       df2 = df2[['Job No','Job Description','Cost Code','Cost Code Description','Date','Class','Cost/Hours','Rate','Billable','Vendor/Employee']]
+       df6 = df6[['Job No','Job Description','Cost Code','Cost Code Description','Date','Class','Cost/Hours','Rate','Billable','Vendor/Employee']]
+       df6['Billable']=df6['Rate']*df6['Cost/Hours']
 
        outname = 'MATERIALS.csv'
 
@@ -124,13 +139,15 @@ def createApplication():
 
        fullname = os.path.join(outdir, outname)
 
-       df2.to_csv(fullname, index=False)
+       df6.to_csv(fullname, index=False)
 
        # Append the two and make a Master file
-       compiled = df.append(df2)
+       compiled = df5.append(df6)
 
        # 'notes' no longer needed
        compiled = compiled.drop(columns = ['notes'])
+
+       compiled = compiled[['Job No','Job Description','Cost Code','Cost Code Description','Date','Class','Cost/Hours','Rate','Billable','Vendor/Employee']]
 
        outdir = r'C:\Users\evanj\Desktop\E1 Project\ '+TodaysDate+' Billing Files'
        if not os.path.exists(outdir):
@@ -150,16 +167,14 @@ def createApplication():
        print('New folder and spreadsheets generated!')
 
 createButton = tk.Button (root, text='       Create New Billing Folder     ',command=createApplication, bg='blue', fg='white', font=('helvetica', 12, 'bold'))
-canvas1.create_window(150, 230, window=createButton)
+canvas1.create_window(150, 330, window=createButton)
 #createButton.grid(row = 3)
 
 def exitApplication():
-    MsgBox = tk.messagebox.askquestion ('Exit Application','Are you sure you want to exit the application',icon = 'warning')
-    if MsgBox == 'yes':
-       root.destroy()
+    root.destroy()
 
 exitButton = tk.Button (root, text='       Exit Application     ',command=exitApplication, bg='brown', fg='white', font=('helvetica', 12, 'bold'))
-canvas1.create_window(150, 280, window=exitButton)
+canvas1.create_window(150, 380, window=exitButton)
 #exitButton.grid(row = 4)
 
 root.mainloop()
