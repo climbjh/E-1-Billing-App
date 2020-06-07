@@ -64,41 +64,40 @@ def createApplication():
     MsgBox = tk.messagebox.askquestion ('Create New Billing Folder',"This will create a new folder with today's date.",icon = 'warning')
     if MsgBox == 'yes':
        # Open Labor file
-       df1 = file1
-       df2 = file2
-       df3 = file3
-       df4 = file4
+       df_lab = file1
+       df_mat = file2
+       df_pay = file3
+       df_cost = file4
 
        # Drop unwanted columns in df1
-       df1 = df1.drop(columns=['payroll_id','fname','lname','number','group','local_day','local_end_time','tz','location'])
+       df_lab = df_lab.drop(columns=['payroll_id','fname','lname','number','group','local_day','local_end_time','tz','location'])
 
        # Split job code and cost code columns into new column sets
-       new = df1["jobcode"].str.split("-", n = 1, expand = True)
-       new2 = df1['cost code'].str.split('-', n = 1, expand = True)
+       new = df_lab["jobcode"].str.split("-", n = 1, expand = True)
+       new2 = df_lab['cost code'].str.split('-', n = 1, expand = True)
 
-       df1['Job No'] = new[1]
-       df1['Job Description'] = new[0]
-       df1['Cost Code'] = new2[0]
-       df1['Cost Code Description'] = new2[1]
+       df_lab['Job No'] = new[1]
+       df_lab['Job Description'] = new[0]
+       df_lab['Cost Code'] = new2[0]
+       df_lab['Cost Code Description'] = new2[1]
 
        # rename columns/create new columns
-       df1 = df1.rename(columns={'local_date': 'Date','hours':'Cost/Hours','username':'Vendor/Employee'})
-       df1['Class'] = "LAB"
-       df1['Cost/Hours'] = pd.to_numeric(df1['Cost/Hours'],errors='coerce')
-       df1['Type'] = ""
-       df1['Billable'] = ""
-       df1['Billable'] = pd.to_numeric(df1['Billable'],errors='coerce')
+       df_lab = df_lab.rename(columns={'local_date': 'Date','hours':'Cost/Hours','username':'Vendor/Employee'})
+       df_lab['Class'] = "LAB"
+       df_lab['Cost/Hours'] = pd.to_numeric(df_lab['Cost/Hours'],errors='coerce')
+       df_lab['Billable'] = ""
+       df_lab['Billable'] = pd.to_numeric(df_lab['Billable'],errors='coerce')
     
        # drop residual 'jobcode' column
-       df1 = df1.drop(columns=['jobcode'])
+       df_lab = df_lab.drop(columns=['jobcode'])
 
-       df5 = pd.merge(df1,df3, how = 'left')
+       df_comp1 = pd.merge(df_lab,df_pay, how = 'left')
 
        # column schema
-       df5 = df5[['Job No','Job Description','Cost Code','Cost Code Description','Date','Class','Cost/Hours','Rate','Billable','Vendor/Employee','notes']]
+       df_comp1 = df_comp1[['Job No','Job Description','Cost Code','Cost Code Description','Date','Class','Cost/Hours','Rate','Billable','Vendor/Employee','notes']]
        
        # multiply data
-       df5['Billable']=df5['Rate']*df5['Cost/Hours']
+       df_comp1['Billable']=df_comp1['Rate']*df_comp1['Cost/Hours']
 
        # Create new path w/ date
        TodaysDate = time.strftime("%m-%d-%Y")
@@ -110,27 +109,27 @@ def createApplication():
 
        fullname = os.path.join(outdir, outname)
 
-       df5.to_csv(fullname, index=False)
+       df_comp1.to_csv(fullname, index=False)
 
        # drop unnecessary 'notes' column
-       df5.drop(columns='notes')
+       df_comp1.drop(columns='notes')
 
       # Drop unwanted columns in df2
-       df2 = df2.drop(columns=['Geographic Area','Phase No','Phase Description','Source','Category','Hours/Units','Quantity','Type'])
+       df_mat = df_mat.drop(columns=['Geographic Area','Phase No','Phase Description','Source','Category','Hours/Units','Quantity','Type'])
 
        # rename columns/create new columns
-       df2 = df2.rename(columns={'Dollars': 'Cost/Hours','Comment':'Vendor/Employee'})
-       df2['Cost/Hours'] = pd.to_numeric(df2['Cost/Hours'],errors='coerce')
-       df2['Billable'] = ""
-       df2['Billable'] = pd.to_numeric(df2['Billable'],errors='coerce')
+       df_mat = df_mat.rename(columns={'Dollars': 'Cost/Hours','Comment':'Vendor/Employee'})
+       df_mat['Cost/Hours'] = pd.to_numeric(df_mat['Cost/Hours'],errors='coerce')
+       df_mat['Billable'] = ""
+       df_mat['Billable'] = pd.to_numeric(df_mat['Billable'],errors='coerce')
 
-       df6 = pd.merge(df2,df4, how = 'left')
+       df_comp2 = pd.merge(df_mat,df_cost, how = 'left')
        
        # column schema
-       df6 = df6[['Job No','Job Description','Cost Code','Cost Code Description','Date','Class','Cost/Hours','Rate','Billable','Vendor/Employee']]
+       df_comp2 = df_comp2[['Job No','Job Description','Cost Code','Cost Code Description','Date','Class','Cost/Hours','Rate','Billable','Vendor/Employee']]
 
        # multiply data
-       df6['Billable']=df6['Rate']*df6['Cost/Hours']
+       df_comp2['Billable']=df_comp2['Rate']*df_comp2['Cost/Hours']
 
        outname = 'MATERIALS.csv'
 
@@ -140,15 +139,15 @@ def createApplication():
 
        fullname = os.path.join(outdir, outname)
 
-       df6.to_csv(fullname, index=False)
+       df_comp2.to_csv(fullname, index=False)
 
        # Append the two and make a Master file
-       compiled = df5.append(df6)
+       master = df_comp1.append(df_comp2)
 
        # 'notes' no longer needed
-       compiled = compiled.drop(columns = ['notes'])
+       master = master.drop(columns = ['notes'])
 
-       compiled = compiled[['Job No','Job Description','Cost Code','Cost Code Description','Date','Class','Cost/Hours','Rate','Billable','Vendor/Employee']]
+       master = master[['Job No','Job Description','Cost Code','Cost Code Description','Date','Class','Cost/Hours','Rate','Billable','Vendor/Employee']]
 
        outdir = r'C:\Users\evanj\Desktop\E1 Project\ '+TodaysDate+' Billing Files'
        if not os.path.exists(outdir):
@@ -162,8 +161,8 @@ def createApplication():
        sheethand = os.path.join(outdir, sheetname)
 
 
-       compiled.to_excel(fullname, sheet_name='Billing', index=False)
-       compiled.to_csv(sheethand, index=False)
+       master.to_excel(fullname, sheet_name='Billing', index=False)
+       master.to_csv(sheethand, index=False)
 
        print('New folder and spreadsheets generated!')
 
